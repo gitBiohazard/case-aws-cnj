@@ -1,0 +1,121 @@
+service: cnj-service
+
+frameworkVersion: '3'
+
+provider:
+  name: aws
+  runtime: nodejs20.x
+  region: us-east-1
+
+functions:
+  saveCNJ:
+    handler: handler.handler
+    events:
+      - sqs:
+          arn: arn:aws:sqs:${self:provider.region}:${aws:accountId}:CNJMessageQueue
+
+resources:
+  Resources:
+    # DynamoDB
+    CNJStoreTable:
+      Type: AWS::DynamoDB::Table
+      Properties:
+        TableName: CNJStore
+        AttributeDefinitions:
+          - AttributeName: cnj
+            AttributeType: S
+        KeySchema:
+          - AttributeName: cnj
+            KeyType: HASH
+        ProvisionedThroughput:
+          ReadCapacityUnits: 5
+          WriteCapacityUnits: 5
+          
+    # Fila SQS
+    CNJMessageQueue:
+      Type: AWS::SQS::Queue
+      Properties:
+        QueueName: CNJMessageQueue
+
+    # Configuração do API Gatway
+    ApiGatewayRestApi:
+      Type: AWS::ApiGateway::RestApi
+      Properties:
+        Name: SaveAndProcessCnj
+        Description: API para salvar e processar CNJ
+        FailOnWarnings: true
+
+    ApiGatewayResourceSaveCnj:
+      Type: AWS::ApiGateway::Resource
+      Properties:
+        ParentId:
+          Fn::GetAtt: 
+            - ApiGatewayRestApi
+            - RootResourceId
+        PathPart: save-cnj
+        RestApiId:
+          Ref: ApiGatewayRestApi
+
+    ApiGatewayMethodPost:
+      Type: AWS::ApiGateway::Method
+      Properties:
+        AuthorizationType: NONE
+        HttpMethod: POST
+        ResourceId:
+          Ref: ApiGatewayResourceSaveCnj
+        RestApiId:
+          Ref: ApiGatewayRestApi
+        Integration:
+          Type: AWS
+          IntegrationHttpMethod: POST
+          Uri:
+            Fn::Sub: arn:aws:apigateway:${AWS::Region}:sqs:path/${AWS::AccountId}/CNJMessageQueue
+          Credentials:
+            Fn::GetAtt:
+              - APIGatewaySQSIntegration
+              - Arn
+          PassthroughBehavior: WHEN_NO_MATCH
+          RequestTemplates:
+            application/json: |
+              {
+                "Action": "SendMessage",
+                "MessageBody": "$input.body"
+              }
+          IntegrationResponses:
+            - StatusCode: 200
+              ResponseTemplates:
+                application/json: '{"status":"Message sent successfully"}'
+
+        MethodResponses:
+          - StatusCode: 200
+            ResponseModels:
+              application/json: "Empty"
+            ResponseParameters:
+              method.response.header.Content-Type: true
+
+
+    # Deploy da API
+    ApiGatewayDeploymentProd:
+      Type: AWS::ApiGateway::Deployment
+      DependsOn: ApiGatewayMethodPost
+      Properties:
+        RestApiId: !Ref ApiGatewayRestApi
+        StageName: prod
+
+    # Função IAM para interagir com SQS
+    APIGatewaySQSIntegration:
+      Type: AWS::IAM::Role
+      Properties:
+        RoleName: APIGatewaySQSIntegration
+        AssumeRolePolicyDocument:
+          Version: "2012-10-17"
+          Statement:
+            - Effect: Allow
+              Principal:
+                Service: apigateway.amazonaws.com
+              Action: sts:AssumeRole
+        ManagedPolicyArns:
+          - arn:aws:iam::aws:policy/AmazonSQSFullAccess
+          - arn:aws:iam::aws:policy/service-role/AmazonAPIGatewayPushToCloudWatchLogs
+
+

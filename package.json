@@ -1,0 +1,21 @@
+{
+    "name": "cnj-service",
+    "version": "1.0.0",
+    "description": "Serverless project for handling CNJ messages",
+    "main": "handler.js",
+    "scripts": {
+      "deploy": "serverless deploy",
+      "remove": "serverless remove",
+      "offline": "serverless offline"
+    },
+    "dependencies": {
+      "@aws-sdk/client-dynamodb": "^3.23.0",
+      "@aws-sdk/lib-dynamodb": "^3.23.0"
+    },
+    "devDependencies": {
+      "serverless": "^3.0.0",
+      "serverless-dotenv-plugin": "^6.0.0",
+      "serverless-offline": "^8.0.0"
+    }
+  }
+  
