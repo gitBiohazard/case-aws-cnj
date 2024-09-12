@@ -52,3 +52,12 @@
 6. **Lambda** processa a mensagem e a armazena no banco.
 
 Este modelo integra várias AWS services para criar uma solução completa para processar e armazenar dados recebidos através de uma API RESTful.
+
+## Segurança
+
+1. **Cognito** O cenário ideal de segurança seria utilizar o AWS Cognito para autenticar os usuários do serviço através de um login.
+2. **API Key** Outro cenário possível é utilizar o API Key
+
+## Observability
+
+1. **CloudWatch** Monitora logs gerados principalmente a partir da função Lambda que, na teoria, consome um recurso externo.
