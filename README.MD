@@ -1,7 +1,9 @@
 # Arquitetura do Projeto
 
-## Desenho da arquitetura.
+## Desenho da arquitetura (ideal para 100 requisições por minuto).
    ![Arquitetura ideal para 100 requisições por minuto](/images/arq.png)
+
+## Desenho da arquitetura (ideal para 1 requisição por hora).
    ![Arquitetura ideal para 1 requisição por hora](/images/arq-simples.png)
 
 ## Estrutura Geral
